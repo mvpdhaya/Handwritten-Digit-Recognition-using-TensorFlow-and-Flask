@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Handwritten Digit Recognizer</title>
+    <style>
+        body {
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            border: 2px solid black;
+            background-color: white;
+            touch-action: none;
+        }
+        .buttons {
+            margin-top: 10px;
+        }
+        /* Popup Styling */
+        .popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+        }
+        .popup button {
+            margin-top: 10px;
+            padding: 5px 15px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Draw a Number and Predict</h1>
+    <canvas id="canvas" width="280" height="280"></canvas>
+    <div class="buttons">
+        <button onclick="clearCanvas()">Clear</button>
+        <button onclick="predictDigit()">Predict</button>
+    </div>
+
+    <!-- Popup -->
+    <div id="popup" class="popup">
+        <h2>Prediction: <span id="popup-prediction"></span></h2>
+        <button onclick="closePopup()">Close</button>
+    </div>
+
+    <script>
+        let canvas = document.getElementById("canvas");
+        let ctx = canvas.getContext("2d");
+        let isDrawing = false;
+
+        ctx.fillStyle = "white";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.lineWidth = 15;
+        ctx.lineCap = "round";
+        ctx.strokeStyle = "black";
+
+        function startDrawing(event) {
+            isDrawing = true;
+            draw(event);
+        }
+
+        function stopDrawing() {
+            isDrawing = false;
+            ctx.beginPath();
+        }
+
+        function draw(event) {
+            if (!isDrawing) return;
+
+            let rect = canvas.getBoundingClientRect();
+            let x = event.clientX - rect.left;
+            let y = event.clientY - rect.top;
+
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+        }
+
+        function clearCanvas() {
+            ctx.fillStyle = "white";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.beginPath();
+        }
+
+        function predictDigit() {
+            let dataURL = canvas.toDataURL("image/png");
+
+            fetch("/predict", {
+                method: "POST",
+                body: JSON.stringify({ image: dataURL.split(',')[1] }),  // Send only Base64 part
+                headers: { "Content-Type": "application/json" }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.prediction !== undefined) {
+                    document.getElementById("popup-prediction").innerText = data.prediction;
+                    document.getElementById("popup").style.display = "block";
+                } else {
+                    alert("Prediction failed. Try again.");
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                alert("Error connecting to the server.");
+            });
+        }
+
+        function closePopup() {
+            document.getElementById("popup").style.display = "none";
+        }
+
+        canvas.addEventListener("mousedown", startDrawing);
+        canvas.addEventListener("mouseup", stopDrawing);
+        canvas.addEventListener("mousemove", draw);
+    </script>
+</body>
+</html>
