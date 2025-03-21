@@ -1,0 +1,1 @@
+Get base64 image

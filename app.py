@@ -7,19 +7,19 @@ from PIL import Image, ImageOps
 
 app = Flask(__name__)
 
-# Load trained MNIST model
+
 model = tf.keras.models.load_model("model.h5")
 
 def preprocess_image(image_data):
     try:
-        # Convert base64 to an image
+        
         image = Image.open(BytesIO(base64.b64decode(image_data)))
-        image = image.convert("L")  # Convert to grayscale
-        image = ImageOps.invert(image)  # Invert (black background to white)
-        image = image.resize((28, 28))  # Resize to MNIST input size
+        image = image.convert("L")  
+        image = ImageOps.invert(image)  
+        image = image.resize((28, 28))  
 
-        image = np.array(image) / 255.0  # Normalize (0-1)
-        image = image.reshape(1, 28, 28, 1)  # Reshape for model
+        image = np.array(image) / 255.0  
+        image = image.reshape(1, 28, 28, 1)  
         return image
     except Exception as e:
         print("Error processing image:", str(e))
@@ -32,7 +32,7 @@ def index():
 @app.route("/predict", methods=["POST"])
 def predict():
     try:
-        data = request.json["image"]  # Get base64 image
+        data = request.json["image"]  
         processed_image = preprocess_image(data)
 
         if processed_image is None:
